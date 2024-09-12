@@ -7,12 +7,26 @@
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 
+//parseInput to handle input parsing
+void parseInput(char *input, char **args) {
+    int i = 0;
+    args[i] = strtok(input, " ");
+    while (args[i] != NULL) {
+        i++;
+        args[i] = strtok(NULL, " ");
+    }
+}
+
 int main() {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_ARGS];
     
     while (1) {  // Infinite loop for the shell
         printf("my-shell> ");  // Display prompt
+
+        //function call for input parsing
+        parseInput(input, args);
+
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
             perror("fgets failed");
             continue;
