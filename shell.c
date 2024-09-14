@@ -2,40 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>  // For system calls like fork, exec
-#include <sys/wait.h> // For wait()
+#include <sys/wait.h> // For wait
+#include <fcntl.h>   // For open()
+#include <errno.h>   // For errno
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 
-
-// function to check background process
-int isBackgroundProcess(char **args) {
-    int i = 0;
-    while (args[i] != NULL) {
-        i++;
-    }
-    if (strcmp(args[i - 1], "&") == 0) {
-        args[i - 1] = NULL;  // Remove '&' from args
-        return 1;  // Indicate background process
-    }
-    return 0;  // Foreground process
-}
-
-//I/O Redirection and Piping
-void executeCommand(char **args) {
-    int fd;
-    if (strstr(args, ">")) {  // Output Redirection
-        char *file = args[2];  // Assuming '>' is the third argument
-        fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
-        args[1] = NULL;  // Removing redirection part from args
-    }
-
-    execvp(args[0], args);
-}
-
-//parseInput to handle input parsing
+// Function to parse input into arguments
 void parseInput(char *input, char **args) {
     int i = 0;
     args[i] = strtok(input, " ");
@@ -45,8 +19,44 @@ void parseInput(char *input, char **args) {
     }
 }
 
+// Function to check if the command is a background process
+int isBackgroundProcess(char **args) {
+    int i = 0;
+    while (args[i] != NULL) {
+        i++;
+    }
+    if (i > 0 && strcmp(args[i - 1], "&") == 0) {
+        args[i - 1] = NULL;  // Remove '&' from args
+        return 1;  // Indicate background process
+    }
+    return 0;  // Foreground process
+}
 
-//function to check builtin commands
+// Function to handle I/O redirection
+void handleRedirection(char **args) {
+    int i = 0;
+    int fd;
+
+    // Output redirection
+    while (args[i] != NULL) {
+        if (strcmp(args[i], ">") == 0) {
+            args[i] = NULL;  // Terminate arguments list
+            fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+            if (fd < 0) {
+                perror("open failed");
+                exit(1);
+            }
+            dup2(fd, STDOUT_FILENO);
+            close(fd);
+            return;
+        }
+        i++;
+    }
+
+    // Input redirection (if needed, can be implemented similarly)
+}
+
+// Function to check and handle built-in commands
 int isBuiltInCommand(char **args) {
     if (args[0] == NULL) {
         return 0;  // No command entered
@@ -57,22 +67,13 @@ int isBuiltInCommand(char **args) {
             fprintf(stderr, "my-shell: expected argument to \"cd\"\n");
         } else {
             if (chdir(args[1]) != 0) {
-                perror("my-shell");
+                perror("cd failed");
             }
         }
         return 1;  // Built-in command executed
     }
     return 0;  // Not a built-in command
 }
-
-
-
-
-
-
-
-
-
 
 int main() {
     char input[MAX_INPUT_SIZE];
@@ -81,49 +82,28 @@ int main() {
     while (1) {  // Infinite loop for the shell
         printf("my-shell> ");  // Display prompt
 
-        //To check if builtin commands or not 
-        if (isBuiltInCommand(args)) {
-            continue;  // Built-in command handled, go to the next iteration
-        }
-
-
-        //function call for input parsing
-        parseInput(input, args);
-
+        // Read input from the user
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
             perror("fgets failed");
             continue;
         }
 
-        
         // Remove newline character
         input[strcspn(input, "\n")] = 0;
-        
-        // Split input into arguments
-        int i = 0;
-        args[i] = strtok(input, " ");
-        while (args[i] != NULL) {
-            i++;
-            args[i] = strtok(NULL, " ");
+
+        // Parse the input into arguments
+        parseInput(input, args);
+
+        // Check if it's a built-in command
+        if (isBuiltInCommand(args)) {
+            continue;  // Built-in command handled, go to the next iteration
         }
 
-        // Exit if command is "exit"
-        if (args[0] != NULL && strcmp(args[0], "exit") == 0) {
-            break;
-        }
-        
+        // Check if it's a background process
+        int background = isBackgroundProcess(args);
 
-        //Handling for Built-in Commands
-        if (args[0] == NULL) {
-            continue;  // Empty command
-        } else if (strcmp(args[0], "exit") == 0) {
-            break;
-        } else if (strcmp(args[0], "cd") == 0) {
-            if (args[1] == NULL || chdir(args[1]) != 0) {
-                perror("cd failed");
-            }
-            continue;
-        }
+        // Handle I/O redirection
+        handleRedirection(args);
 
         // Fork a child process to execute the command
         pid_t pid = fork();
@@ -133,8 +113,10 @@ int main() {
             perror("execvp failed");
             exit(1);
         } else if (pid > 0) {
-            // Parent process: Wait for the child to finish
-            wait(NULL);
+            // Parent process: Wait for the child to finish unless it's a background process
+            if (!background) {
+                wait(NULL);
+            }
         } else {
             perror("fork failed");
         }
