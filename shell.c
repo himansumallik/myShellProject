@@ -5,34 +5,14 @@
 #include <sys/wait.h> // For wait
 #include <fcntl.h>   // For open()
 #include <errno.h>   // For errno
+#include "library.h"
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 #define MAX_PATH_SIZE 1024
 
 char initial_cwd[MAX_PATH_SIZE];  // To store the initial working directory
-
-// Function to simulate a simple shell loading animation
-void displayShellAnimation() {
-    char *message = "Welcome to my-shell!";
-    char *dots = "...\n";
-    
-    printf("\n");
-    for (int i = 0; message[i] != '\0'; i++) {
-        printf("%c", message[i]);
-        fflush(stdout);  // Ensure the output is printed immediately
-        usleep(100000);  // 100 ms delay between each character
-    }
-
-    for (int i = 0; dots[i] != '\0'; i++) {
-        printf("%c", dots[i]);
-        fflush(stdout);
-        usleep(300000);  // 300 ms delay for dots
-    }
-
-    printf("\n");
-    usleep(500000);  // Pause for 0.5 seconds after the animation
-}
+void welcomeAnimation();
 
 
 // Function to parse input into arguments
@@ -126,7 +106,8 @@ int main() {
     while (1) {  // Infinite loop for the shell
 
         // Display the shell animation at startup
-        displayShellAnimation();
+        void welcomeAnimation();  
+
 
         // Store the initial working directory
         if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
