@@ -17,12 +17,47 @@ void parseInput(char *input, char **args) {
     }
 }
 
+
+//function to check builtin commands
+int isBuiltInCommand(char **args) {
+    if (args[0] == NULL) {
+        return 0;  // No command entered
+    } else if (strcmp(args[0], "exit") == 0) {
+        exit(0);
+    } else if (strcmp(args[0], "cd") == 0) {
+        if (args[1] == NULL) {
+            fprintf(stderr, "my-shell: expected argument to \"cd\"\n");
+        } else {
+            if (chdir(args[1]) != 0) {
+                perror("my-shell");
+            }
+        }
+        return 1;  // Built-in command executed
+    }
+    return 0;  // Not a built-in command
+}
+
+
+
+
+
+
+
+
+
+
 int main() {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_ARGS];
     
     while (1) {  // Infinite loop for the shell
         printf("my-shell> ");  // Display prompt
+
+        //To check if builtin commands or not 
+        if (isBuiltInCommand(args)) {
+            continue;  // Built-in command handled, go to the next iteration
+        }
+
 
         //function call for input parsing
         parseInput(input, args);
