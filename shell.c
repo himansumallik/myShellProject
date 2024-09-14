@@ -8,6 +8,19 @@
 #define MAX_ARGS 64
 
 
+// function to check background process
+int isBackgroundProcess(char **args) {
+    int i = 0;
+    while (args[i] != NULL) {
+        i++;
+    }
+    if (strcmp(args[i - 1], "&") == 0) {
+        args[i - 1] = NULL;  // Remove '&' from args
+        return 1;  // Indicate background process
+    }
+    return 0;  // Foreground process
+}
+
 //I/O Redirection and Piping
 void executeCommand(char **args) {
     int fd;
