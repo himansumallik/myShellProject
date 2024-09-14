@@ -8,6 +8,9 @@
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
+#define MAX_PATH_SIZE 1024
+
+char initial_cwd[MAX_PATH_SIZE];  // To store the initial working directory
 
 // Function to parse input into arguments
 void parseInput(char *input, char **args) {
@@ -56,6 +59,16 @@ void handleRedirection(char **args) {
     // Input redirection (if needed, can be implemented similarly)
 }
 
+//function to get the relative directory
+// Function to compute relative path
+void getRelativePath(char *relative_path, const char *cwd) {
+    if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
+        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
+    } else {
+        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd);  // Use absolute path if not a subdirectory
+    }
+}
+
 // Function to check and handle built-in commands
 int isBuiltInCommand(char **args) {
     if (args[0] == NULL) {
@@ -68,6 +81,14 @@ int isBuiltInCommand(char **args) {
         } else {
             if (chdir(args[1]) != 0) {
                 perror("cd failed");
+            } 
+            char cwd[MAX_PATH_SIZE];
+            if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                char relative_path[MAX_PATH_SIZE];
+                getRelativePath(relative_path, cwd);
+                printf("my-shell%s> ", relative_path);
+            } else {
+                perror("getcwd failed");
             }
         }
         return 1;  // Built-in command executed
@@ -80,6 +101,13 @@ int main() {
     char *args[MAX_ARGS];
     
     while (1) {  // Infinite loop for the shell
+
+        // Store the initial working directory
+        if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
+            perror("getcwd failed");
+            exit(1);
+        }
+
         printf("my-shell> ");  // Display prompt
 
         // Read input from the user
