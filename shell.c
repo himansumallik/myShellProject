@@ -7,6 +7,21 @@
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 
+
+//I/O Redirection and Piping
+void executeCommand(char **args) {
+    int fd;
+    if (strstr(args, ">")) {  // Output Redirection
+        char *file = args[2];  // Assuming '>' is the third argument
+        fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+        args[1] = NULL;  // Removing redirection part from args
+    }
+
+    execvp(args[0], args);
+}
+
 //parseInput to handle input parsing
 void parseInput(char *input, char **args) {
     int i = 0;
