@@ -16,7 +16,8 @@
 #define GAP 2  // Define a gap between characters
 
 char initial_cwd[MAX_PATH_SIZE];  // Definition of initial_cwd
-
+// List of built-in commands (you can extend this as needed)
+const char *built_in_commands[] = {"cd", "exit", "help", NULL};
 
 // Function to display the "Welcome to the Shell" animation at the current cursor position
 void welcomeAnimation() {
@@ -150,4 +151,42 @@ int isBuiltInCommand(char **args) {
         return 1;  // Built-in command executed
     }
     return 0;  // Not a built-in command
+}
+
+
+
+// Function to match commands and file paths
+char **command_completion(const char *text, int start, int end) {
+    rl_attempted_completion_over = 1; // Attempt custom completion
+
+    (void)end;  // Mark 'end' as unused to prevent warnings
+
+    if (start == 0) {
+        // Complete commands
+        return rl_completion_matches(text, command_generator);
+    } else {
+        // Complete file paths
+        return rl_completion_matches(text, rl_filename_completion_function);
+    }
+}
+
+// Generator for command completion
+char *command_generator(const char *text, int state) {
+    static int list_index, len;
+    const char *command;
+
+    // Initialize if it's the first call
+    if (!state) {
+        list_index = 0;
+        len = strlen(text);
+    }
+
+    // Iterate over built-in commands to find a match
+    while ((command = built_in_commands[list_index++])) {
+        if (strncmp(command, text, len) == 0) {
+            return strdup(command);
+        }
+    }
+
+    return NULL;  // No more matches
 }

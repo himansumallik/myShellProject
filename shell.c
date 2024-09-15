@@ -19,12 +19,17 @@ int isBackgroundProcess(char **args);
 void handleRedirection(char **args);
 void getRelativePath(char *relative_path, const char *cwd);
 int isBuiltInCommand(char **args);
+char **command_completion(const char *text, int start, int end);
+char *command_generator(const char *text, int state);
 
 // Main function
 int main() {
     char *input;
     char *args[MAX_ARGS];
     //welcomeAnimation();
+
+    // Enable auto-completion
+    rl_attempted_completion_function = command_completion;
     
     // Store the initial working directory
     if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
