@@ -106,7 +106,7 @@ int main() {
     while (1) {  // Infinite loop for the shell
 
         // Display the shell animation at startup
-        void welcomeAnimation();  
+        welcomeAnimation();  
 
 
         // Store the initial working directory
