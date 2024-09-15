@@ -17,7 +17,33 @@
 
 char initial_cwd[MAX_PATH_SIZE];  // Definition of initial_cwd
 // List of built-in commands (you can extend this as needed)
-const char *built_in_commands[] = {"cd", "exit", "help", NULL};
+const char *built_in_commands[] = {
+    "COMMANDS---------DESCRIPTION",
+    "----------------------------",
+    "   cd      --  Change directory",        
+    "   exit    --  Exit the shell",      
+    "   help    --  Display help information",      
+    "   pwd     --  Print working directory",
+    "   echo    --  Print arguments to the standard output",
+    "   history --  Clear the terminal screen",
+    "   clear   --  Clear the terminal screen",
+    "   alias   --  Define or display aliases",
+    "   unalias --  Remove aliases",
+    "   jobs    --  List jobs currently running in the background",
+    "   fg      --  Bring a background job to the foreground",
+    "   bg      --  Resume a suspended job in the background",
+    "   type    --  Describe a command (e.g., whether it's a built-in or an executable file)",
+    "   kill    --  Send a signal to a process, typically to terminate it",
+    "   exec    --  Replace the shell with a new command",
+    "   set     --  Set shell variables and environment",     
+    "   unset   --  Unset shell variables and environment",
+    "   source  --  Read and execute commands from a file in the current shell",
+    "   path    --  Display or set the search path for commands",
+    "   umask   --  Set default file permissions for newly created files",
+    "   time    --  Measure the time taken to execute a command",
+
+    NULL         // Array terminator
+};
 
 // Function to display the "Welcome to the Shell" animation at the current cursor position
 void welcomeAnimation() {
