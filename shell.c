@@ -84,14 +84,6 @@ int isBuiltInCommand(char **args) {
         } else {
             if (chdir(args[1]) != 0) {
                 perror("cd failed");
-            } 
-            char cwd[MAX_PATH_SIZE];
-            if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                char relative_path[MAX_PATH_SIZE];
-                getRelativePath(relative_path, cwd);
-                printf("my-shell%s> ", relative_path);
-            } else {
-                perror("getcwd failed");
             }
         }
         return 1;  // Built-in command executed
@@ -102,25 +94,33 @@ int isBuiltInCommand(char **args) {
 int main() {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_ARGS];
+
+    // Display the shell animation at startup
+    welcomeAnimation(); 
     
-    while (1) {  // Infinite loop for the shell
+    // Store the initial working directory
+    if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
+        perror("getcwd failed");
+        exit(1);
+    }
 
-        // Display the shell animation at startup
-        welcomeAnimation();  
+    while (1) {  // Infinite loop for the shell 
 
-
-        // Store the initial working directory
-        if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
+        // Get the current working directory
+        char cwd[MAX_PATH_SIZE];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            char relative_path[MAX_PATH_SIZE];
+            getRelativePath(relative_path, cwd);  // Compute relative path
+            printf("my-shell%s> ", relative_path);  // Print prompt with relative path
+        } else {
             perror("getcwd failed");
-            exit(1);
+            continue;  // Skip to the next iteration if getcwd fails
         }
-
-        printf("my-shell> ");  // Display prompt
 
         // Read input from the user
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
             perror("fgets failed");
-            continue;
+            continue;  // Skip to the next iteration if fgets fails
         }
 
         // Remove newline character
