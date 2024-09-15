@@ -11,85 +11,16 @@
 #define MAX_ARGS 64
 #define MAX_PATH_SIZE 1024
 
-char initial_cwd[MAX_PATH_SIZE];  // To store the initial working directory
+
+
+//function declared and imported from library.h file
 void welcomeAnimation();
+void parseInput(char *input, char **args);
+int isBackgroundProcess(char **args);
+void handleRedirection(char **args);
+void getRelativePath(char *relative_path, const char *cwd);
+int isBuiltInCommand(char **args);
 
-
-// Function to parse input into arguments
-void parseInput(char *input, char **args) {
-    int i = 0;
-    args[i] = strtok(input, " ");
-    while (args[i] != NULL) {
-        i++;
-        args[i] = strtok(NULL, " ");
-    }
-}
-
-// Function to check if the command is a background process
-int isBackgroundProcess(char **args) {
-    int i = 0;
-    while (args[i] != NULL) {
-        i++;
-    }
-    if (i > 0 && strcmp(args[i - 1], "&") == 0) {
-        args[i - 1] = NULL;  // Remove '&' from args
-        return 1;  // Indicate background process
-    }
-    return 0;  // Foreground process
-}
-
-// Function to handle I/O redirection
-void handleRedirection(char **args) {
-    int i = 0;
-    int fd;
-
-    // Output redirection
-    while (args[i] != NULL) {
-        if (strcmp(args[i], ">") == 0) {
-            args[i] = NULL;  // Terminate arguments list
-            fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
-            if (fd < 0) {
-                perror("open failed");
-                exit(1);
-            }
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
-            return;
-        }
-        i++;
-    }
-
-    // Input redirection (if needed, can be implemented similarly)
-}
-
-//function to get the relative directory
-// Function to compute relative path
-void getRelativePath(char *relative_path, const char *cwd) {
-    if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
-        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
-    } else {
-        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd);  // Use absolute path if not a subdirectory
-    }
-}
-
-// Function to check and handle built-in commands
-int isBuiltInCommand(char **args) {
-    if (args[0] == NULL) {
-        return 0;  // No command entered
-    } else if (strcmp(args[0], "exit") == 0) {
-        exit(0);
-    } else if (strcmp(args[0], "cd") == 0) {
-        if (args[1] == NULL) {
-            fprintf(stderr, "my-shell: expected argument to \"cd\"\n");
-        } else {
-            if (chdir(args[1]) != 0) {
-                perror("cd failed");
-            }
-        }
-        return 1;  // Built-in command executed
-    }
-    return 0;  // Not a built-in command
-}
 
 int main() {
     char input[MAX_INPUT_SIZE];
