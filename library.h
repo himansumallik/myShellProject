@@ -14,4 +14,9 @@ void handleRedirection(char **args);
 void getRelativePath(char *relative_path, const char *cwd);
 int isBuiltInCommand(char **args);
 
+
+// Declaration for tab completion
+char **command_completion(const char *text, int start, int end);
+char *command_generator(const char *text, int state);
+
 #endif // LIBRARY_H

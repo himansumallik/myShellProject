@@ -5,6 +5,9 @@
 #include <sys/wait.h> // For wait
 #include <fcntl.h>   // For open()
 #include <errno.h>   // For errno
+#include <dirent.h>  // For reading directories
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "library.h"
 
 #define MAX_INPUT_SIZE 1024
@@ -41,7 +44,7 @@ void welcomeAnimation() {
 
 // Function to parse input into arguments
 void parseInput(char *input, char **args) {
-    printf("from parseinput..\n");
+    //printf("from parseinput..\n");
 
     int i = 0;
     args[i] = strtok(input, " ");
@@ -56,7 +59,7 @@ void parseInput(char *input, char **args) {
 // Function to check if the command is a background process
 int isBackgroundProcess(char **args) {
     int i = 0;
-    printf("from backgroundprocess..\n");
+    //printf("from backgroundprocess..\n");
     while (args[i] != NULL) {
         i++;
     }
@@ -113,20 +116,25 @@ void handleRedirection(char **args) {
 
 // Function to get the relative path from initial_cwd
 void getRelativePath(char *relative_path, const char *cwd) {
-    //printf("from relativepath..\n");
-    if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
+    // Check if cwd is exactly the initial directory
+    if (strcmp(cwd, initial_cwd) == 0) {
+        // If in the initial directory, set relative path to "."
+        snprintf(relative_path, MAX_PATH_SIZE, ".");
+    } else if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
+        // If in a subdirectory, show the relative path
         snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
     } else {
-        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd);  // Use absolute path if not a subdirectory
+        // If not inside the initial directory, use the absolute path
+        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd);
     }
 }
 
 
 
+
 // Function to check and handle built-in commands
 int isBuiltInCommand(char **args) {
-    printf("from builtin..\n");
-    //printf("%c",initial_cwd[MAX_PATH_SIZE]);
+    //printf("from builtin..\n");
     if (args[0] == NULL) {
         return 0;  // No command entered
     } else if (strcmp(args[0], "exit") == 0) {
@@ -137,15 +145,7 @@ int isBuiltInCommand(char **args) {
         } else {
             if (chdir(args[1]) != 0) {
                 perror("cd failed");
-            } else {
-                // Update the initial working directory
-                char cwd[MAX_PATH_SIZE];
-                if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                    snprintf(initial_cwd, sizeof(initial_cwd), "%s", cwd);
-                } else {
-                    perror("getcwd failed");
-                }
-            }
+            } 
         }
         return 1;  // Built-in command executed
     }
