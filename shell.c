@@ -5,15 +5,14 @@
 #include <sys/wait.h> // For wait
 #include <fcntl.h>   // For open()
 #include <errno.h>   // For errno
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "library.h"
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 #define MAX_PATH_SIZE 1024
 
-
-
-//function declared and imported from library.h file
 void welcomeAnimation();
 void parseInput(char *input, char **args);
 int isBackgroundProcess(char **args);
@@ -21,13 +20,11 @@ void handleRedirection(char **args);
 void getRelativePath(char *relative_path, const char *cwd);
 int isBuiltInCommand(char **args);
 
-
+// Main function
 int main() {
-    char input[MAX_INPUT_SIZE];
+    char *input;
     char *args[MAX_ARGS];
-
-    // Display the shell animation at startup
-    welcomeAnimation(); 
+    //welcomeAnimation();
     
     // Store the initial working directory
     if (getcwd(initial_cwd, sizeof(initial_cwd)) == NULL) {
@@ -36,22 +33,28 @@ int main() {
     }
 
     while (1) {  // Infinite loop for the shell 
-
-        // Get the current working directory
         char cwd[MAX_PATH_SIZE];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             char relative_path[MAX_PATH_SIZE];
-            getRelativePath(relative_path, cwd);  // Compute relative path
-            printf("my-shell%s> ", relative_path);  // Print prompt with relative path
+            getRelativePath(relative_path, cwd);
+            char prompt[MAX_PATH_SIZE + 20];
+            snprintf(prompt, sizeof(prompt), "my-shell%s> ", relative_path);
+            
+            input = readline(prompt);  // Readline to handle input
         } else {
             perror("getcwd failed");
-            continue;  // Skip to the next iteration if getcwd fails
+            continue;
         }
 
-        // Read input from the user
-        if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
-            perror("fgets failed");
-            continue;  // Skip to the next iteration if fgets fails
+        if (input == NULL) {
+            // Handle end-of-file (Ctrl+D)
+            printf("\n");
+            exit(0);
+        }
+
+        // Add input to history
+        if (*input) {
+            add_history(input);
         }
 
         // Remove newline character
@@ -62,6 +65,7 @@ int main() {
 
         // Check if it's a built-in command
         if (isBuiltInCommand(args)) {
+            free(input);
             continue;  // Built-in command handled, go to the next iteration
         }
 
@@ -86,6 +90,8 @@ int main() {
         } else {
             perror("fork failed");
         }
+
+        free(input);  // Free the input buffer allocated by readline
     }
 
     return 0;

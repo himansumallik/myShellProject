@@ -12,11 +12,12 @@
 #define MAX_PATH_SIZE 1024
 #define GAP 2  // Define a gap between characters
 
-char initial_cwd[MAX_PATH_SIZE];  // To store the initial working directory
+char initial_cwd[MAX_PATH_SIZE];  // Definition of initial_cwd
 
 
 // Function to display the "Welcome to the Shell" animation at the current cursor position
 void welcomeAnimation() {
+
     const char* message = "Welcome to the Shell";
     int length = strlen(message);  // Find the length of the message
 
@@ -40,6 +41,8 @@ void welcomeAnimation() {
 
 // Function to parse input into arguments
 void parseInput(char *input, char **args) {
+    printf("from parseinput..\n");
+
     int i = 0;
     args[i] = strtok(input, " ");
     while (args[i] != NULL) {
@@ -53,6 +56,7 @@ void parseInput(char *input, char **args) {
 // Function to check if the command is a background process
 int isBackgroundProcess(char **args) {
     int i = 0;
+    printf("from backgroundprocess..\n");
     while (args[i] != NULL) {
         i++;
     }
@@ -84,14 +88,32 @@ void handleRedirection(char **args) {
         }
         i++;
     }
-    // Input redirection (if needed, can be implemented similarly)
+
+    // Input redirection
+    i = 0;  // Reset index for input redirection
+    while (args[i] != NULL) {
+        if (strcmp(args[i], "<") == 0) {
+            args[i] = NULL;  // Terminate arguments list
+            fd = open(args[i + 1], O_RDONLY);
+            if (fd < 0) {
+                perror("open failed");
+                exit(1);
+            }
+            dup2(fd, STDIN_FILENO);
+            close(fd);
+            return;
+        }
+        i++;
+    }
 }
 
 
 
 
-//function to get the relative directory
+
+// Function to get the relative path from initial_cwd
 void getRelativePath(char *relative_path, const char *cwd) {
+    //printf("from relativepath..\n");
     if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
         snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
     } else {
@@ -103,6 +125,8 @@ void getRelativePath(char *relative_path, const char *cwd) {
 
 // Function to check and handle built-in commands
 int isBuiltInCommand(char **args) {
+    printf("from builtin..\n");
+    //printf("%c",initial_cwd[MAX_PATH_SIZE]);
     if (args[0] == NULL) {
         return 0;  // No command entered
     } else if (strcmp(args[0], "exit") == 0) {
@@ -113,6 +137,14 @@ int isBuiltInCommand(char **args) {
         } else {
             if (chdir(args[1]) != 0) {
                 perror("cd failed");
+            } else {
+                // Update the initial working directory
+                char cwd[MAX_PATH_SIZE];
+                if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                    snprintf(initial_cwd, sizeof(initial_cwd), "%s", cwd);
+                } else {
+                    perror("getcwd failed");
+                }
             }
         }
         return 1;  // Built-in command executed
