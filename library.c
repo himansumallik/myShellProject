@@ -5,9 +5,6 @@
 #include <sys/wait.h> // For wait
 #include <fcntl.h>   // For open()
 #include <errno.h>   // For errno
-#include <dirent.h>  // For reading directories
-#include <readline/readline.h>
-#include <readline/history.h>
 #include "library.h"
 
 #define MAX_INPUT_SIZE 1024
@@ -15,64 +12,29 @@
 #define MAX_PATH_SIZE 1024
 #define GAP 2  // Define a gap between characters
 
-char initial_cwd[MAX_PATH_SIZE];  // Definition of initial_cwd
-// List of built-in commands (you can extend this as needed)
-const char *built_in_commands[] = {
-    "COMMANDS---------DESCRIPTION",
-    "----------------------------",
-    "   cd      --  Change directory",        
-    "   exit    --  Exit the shell",      
-    "   help    --  Display help information",      
-    "   pwd     --  Print working directory",
-    "   echo    --  Print arguments to the standard output",
-    "   history --  Clear the terminal screen",
-    "   clear   --  Clear the terminal screen",
-    "   alias   --  Define or display aliases",
-    "   unalias --  Remove aliases",
-    "   jobs    --  List jobs currently running in the background",
-    "   fg      --  Bring a background job to the foreground",
-    "   bg      --  Resume a suspended job in the background",
-    "   type    --  Describe a command (e.g., whether it's a built-in or an executable file)",
-    "   kill    --  Send a signal to a process, typically to terminate it",
-    "   exec    --  Replace the shell with a new command",
-    "   set     --  Set shell variables and environment",     
-    "   unset   --  Unset shell variables and environment",
-    "   source  --  Read and execute commands from a file in the current shell",
-    "   path    --  Display or set the search path for commands",
-    "   umask   --  Set default file permissions for newly created files",
-    "   time    --  Measure the time taken to execute a command",
 
-    NULL         // Array terminator
-};
 
 // Function to display the "Welcome to the Shell" animation at the current cursor position
 void welcomeAnimation() {
-
     const char* message = "Welcome to the Shell";
-    int length = strlen(message);  // Find the length of the message
+    int length = strlen(message);
 
-    // Loop through each character and display it one by one
     for (int i = 0; i < length; i++) {
-        printf("%c", message[i]);  // Print each character
-        fflush(stdout);  // Flush the output to make sure it appears immediately
-        usleep(200000);  // 200 ms delay for animation effect
-
-        // Print the gap between characters if needed
+        printf("%c", message[i]);
+        fflush(stdout);
+        usleep(200000);
         for (int j = 0; j < GAP; j++) {
-            printf(" ");  // Print spaces for the gap
+            printf(" ");
         }
     }
-    printf("\n");  // Move to the next line after the animation completes
+    printf("\n");
 }
-
 
 
 
 
 // Function to parse input into arguments
 void parseInput(char *input, char **args) {
-    //printf("from parseinput..\n");
-
     int i = 0;
     args[i] = strtok(input, " ");
     while (args[i] != NULL) {
@@ -82,19 +44,17 @@ void parseInput(char *input, char **args) {
 }
 
 
-
 // Function to check if the command is a background process
 int isBackgroundProcess(char **args) {
     int i = 0;
-    //printf("from backgroundprocess..\n");
     while (args[i] != NULL) {
         i++;
     }
     if (i > 0 && strcmp(args[i - 1], "&") == 0) {
-        args[i - 1] = NULL;  // Remove '&' from args
-        return 1;  // Indicate background process
+        args[i - 1] = NULL;
+        return 1;
     }
-    return 0;  // Foreground process
+    return 0;
 }
 
 
@@ -103,10 +63,9 @@ void handleRedirection(char **args) {
     int i = 0;
     int fd;
 
-    // Output redirection
     while (args[i] != NULL) {
         if (strcmp(args[i], ">") == 0) {
-            args[i] = NULL;  // Terminate arguments list
+            args[i] = NULL;
             fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
             if (fd < 0) {
                 perror("open failed");
@@ -119,11 +78,10 @@ void handleRedirection(char **args) {
         i++;
     }
 
-    // Input redirection
-    i = 0;  // Reset index for input redirection
+    i = 0;
     while (args[i] != NULL) {
         if (strcmp(args[i], "<") == 0) {
-            args[i] = NULL;  // Terminate arguments list
+            args[i] = NULL;
             fd = open(args[i + 1], O_RDONLY);
             if (fd < 0) {
                 perror("open failed");
@@ -143,15 +101,18 @@ void handleRedirection(char **args) {
 
 // Function to get the relative path from initial_cwd
 void getRelativePath(char *relative_path, const char *cwd) {
-    // Check if cwd is exactly the initial directory
-    if (strcmp(cwd, initial_cwd) == 0) {
-        // If in the initial directory, set relative path to "."
-        snprintf(relative_path, MAX_PATH_SIZE, ".");
-    } else if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
-        // If in a subdirectory, show the relative path
-        snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
+    // Check if cwd is a subdirectory of initial_cwd
+    if (strncmp(cwd, initial_cwd, strlen(initial_cwd)) == 0) {
+        // If inside the initial directory, calculate the relative path
+        if (cwd[strlen(initial_cwd)] == '\0') {
+            // Special case: if cwd == initial_cwd, set relative_path to "."
+            snprintf(relative_path, MAX_PATH_SIZE, ".");
+        } else {
+            // Use the part of cwd after initial_cwd to get the relative path
+            snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd + strlen(initial_cwd));
+        }
     } else {
-        // If not inside the initial directory, use the absolute path
+        // If cwd is outside the initial directory, use absolute path
         snprintf(relative_path, MAX_PATH_SIZE, "%s", cwd);
     }
 }
@@ -161,9 +122,8 @@ void getRelativePath(char *relative_path, const char *cwd) {
 
 // Function to check and handle built-in commands
 int isBuiltInCommand(char **args) {
-    //printf("from builtin..\n");
     if (args[0] == NULL) {
-        return 0;  // No command entered
+        return 0;
     } else if (strcmp(args[0], "exit") == 0) {
         exit(0);
     } else if (strcmp(args[0], "cd") == 0) {
@@ -172,47 +132,9 @@ int isBuiltInCommand(char **args) {
         } else {
             if (chdir(args[1]) != 0) {
                 perror("cd failed");
-            } 
+            }
         }
-        return 1;  // Built-in command executed
+        return 1;
     }
-    return 0;  // Not a built-in command
-}
-
-
-
-// Function to match commands and file paths
-char **command_completion(const char *text, int start, int end) {
-    rl_attempted_completion_over = 1; // Attempt custom completion
-
-    (void)end;  // Mark 'end' as unused to prevent warnings
-
-    if (start == 0) {
-        // Complete commands
-        return rl_completion_matches(text, command_generator);
-    } else {
-        // Complete file paths
-        return rl_completion_matches(text, rl_filename_completion_function);
-    }
-}
-
-// Generator for command completion
-char *command_generator(const char *text, int state) {
-    static int list_index, len;
-    const char *command;
-
-    // Initialize if it's the first call
-    if (!state) {
-        list_index = 0;
-        len = strlen(text);
-    }
-
-    // Iterate over built-in commands to find a match
-    while ((command = built_in_commands[list_index++])) {
-        if (strncmp(command, text, len) == 0) {
-            return strdup(command);
-        }
-    }
-
-    return NULL;  // No more matches
+    return 0;
 }
