@@ -15,3 +15,4 @@ library.o: library.c library.h
 
 clean:
 	rm -f shellprogram *.o
+
